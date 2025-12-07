@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: fleet_tracker_app
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: fleet_tracker_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --loglevel warning --requirepass ${REDIS_PASSWORD}
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  prometheus:
+    image: prom/prometheus
+    container_name: fleet_tracker_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: always
+
+volumes:
+  redis_data:
+  prometheus_data:
